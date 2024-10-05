@@ -4,7 +4,6 @@ import (
 	"log/slog"
 	"minio-example/model"
 	"minio-example/utils"
-	"sync"
 
 	"github.com/gin-gonic/gin"
 	"github.com/minio/minio-go/v7"
@@ -47,8 +46,6 @@ func UploadFiles(ctx *gin.Context) model.ResponseModel {
 	// get the files
 	files := form.File["files"]
 
-	// Create a channel
-	var wg sync.WaitGroup // init a wait group
 	// Create a channel with length of files
 	ch := make(chan model.Uploadstatus, len(files))
 
@@ -64,7 +61,7 @@ func UploadFiles(ctx *gin.Context) model.ResponseModel {
 		// Im using channels to collect the result without race condition
 
 		// wg.Add(1)
-		go utils.PutImageInBucket(ctx, bucket_name, file, client, FileUploadStatus, &wg, ch)
+		go utils.PutImageInBucket(ctx, bucket_name, file, client, FileUploadStatus, ch)
 	}
 	// wait for the goroutines
 	// wg.Wait()

@@ -7,7 +7,6 @@ import (
 	"mime/multipart"
 	"minio-example/model"
 	"net/url"
-	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -36,10 +35,10 @@ func ConnectToMinIo() *minio.Client {
 	return minioClient
 }
 
-func PutImageInBucket(ctx *gin.Context, bucket_name string, file *multipart.FileHeader, client *minio.Client, FileUploadStatus []model.Uploadstatus, wg *sync.WaitGroup, ch chan model.Uploadstatus) {
+func PutImageInBucket(ctx *gin.Context, bucket_name string, file *multipart.FileHeader, client *minio.Client, FileUploadStatus []model.Uploadstatus, ch chan model.Uploadstatus) {
 	var uploadStatusOfGoRoutine model.Uploadstatus
 	// Create a unique file name
-	object_name := fmt.Sprintf("%s-%s", uuid.NewString(), file.Filename) // uuid + file name (to makesure file name is unique)
+	object_name := fmt.Sprintf("%s-%s", uuid.NewString(), file.Filename) // uuid + file name (to make sure file name is unique)
 
 	// Update the static vars
 	uploadStatusOfGoRoutine.BucketName = bucket_name
@@ -53,7 +52,7 @@ func PutImageInBucket(ctx *gin.Context, bucket_name string, file *multipart.File
 		slog.Error("Error processing file", "filename", file.Filename, "error", err.Error())
 		// pass value into channel and exit
 		ch <- uploadStatusOfGoRoutine
-		defer wg.Done()
+		ctx.Done()
 	}
 	defer reader.Close()
 
@@ -64,12 +63,13 @@ func PutImageInBucket(ctx *gin.Context, bucket_name string, file *multipart.File
 		slog.Error("Error while uploading file", "filename", file.Filename, "error", err.Error())
 		// pass value into channel and exit
 		ch <- uploadStatusOfGoRoutine
-		defer wg.Done()
+		ctx.Done()
 	}
 	slog.Info("Successfully uploaded file %v Size : %d", file.Filename, info.Size)
 	uploadStatusOfGoRoutine.Status = true
 	// pass value into channel and exit
 	ch <- uploadStatusOfGoRoutine
+	ctx.Done()
 }
 
 func GeneratePresignedURL(ctx *gin.Context, client *minio.Client, bucket_name string) []model.Files {
