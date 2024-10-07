@@ -55,7 +55,6 @@ func UploadFiles(ctx *gin.Context) model.ResponseModel {
 	// Upload into bucket
 	for _, file := range files {
 		// Fire each goroutines to upload files into bucket
-		// Set WaitGroup to wait till it ends
 		// After data upload each goroutines update their status in the structure
 		// to protect from Race condition we can use either mutex or channels
 		// Im using channels to collect the result without race condition
@@ -66,7 +65,7 @@ func UploadFiles(ctx *gin.Context) model.ResponseModel {
 	// wait for the goroutines
 	// wg.Wait()
 
-	// Run a channel to collect the result
+	// loop through the channel to collect the result
 	for i := 0; i < len(files); i++ {
 		FileUploadStatus = append(FileUploadStatus, <-ch)
 	}
